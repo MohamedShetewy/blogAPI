@@ -2,57 +2,94 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Post;
+use App\Models\Post as Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use App\Http\Resources\Post as ResourcePost;
+use Exception;
+use Illuminate\Support\Facades\Auth;
 
-class PostController extends Controller
+class PostController extends BaseController
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        //
+        $posts = Post::all();
+        return $this->sendResponse(ResourcePost::collection($posts),"Posts retrieved successfully");
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+    
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        //
+        $input = $request->all();
+
+        $validate = Validator::make($input,[
+            'title' => 'required',
+            'description' => 'required'
+            
+        ]);
+
+        if($validate->fails()){
+            return $this->sendError("please validate error",$validate->errors());
+        }
+
+        //$input['user_id']= Auth::user()->id;
+        try{
+            $post = Post::create($input);
+        } catch (Exception $e) {
+            // Log the error message
+            //error_log('Error creating user: ' . $e->getMessage());
+            return $this->sendError("please validate error",$e->getMessage());
+        }
+
+        return $this->sendResponse(new ResourcePost($post),"Post Created successfully");
+
+
+
+
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Post $post)
+    public function show($id)
     {
-        //
+        $post = Post::find($id);
+        if($post->fails()){
+            return $this->sendError("Post Not Found");
+        }
+        return $this->sendResponse(new ResourcePost($post),"Post retrieved successfully");
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Post $post)
-    {
-        //
-    }
+
 
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Post $post)
     {
-        //
+        $input = $request->all();
+
+        $validate = Validator::make($input,[
+            'title' => 'required',
+            'description' => 'required'
+            
+        ]);
+
+        if($validate->fails()){
+            return $this->sendError("please validate error",$validate->errors());
+        }
+
+        $post->title = $input['title'];
+        $post->description = $input['description'];
+        $post->save();
+        return $this->sendResponse(new ResourcePost($post),"Post updated successfully");
     }
 
     /**
@@ -60,6 +97,7 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
-        //
+        $post->delete();
+        return $this->sendResponse(new ResourcePost($post),"Post deleted successfully");
     }
 }
