@@ -20,6 +20,13 @@ class PostController extends BaseController
         return $this->sendResponse(ResourcePost::collection($posts),"Posts retrieved successfully");
     }
 
+    public function userPosts()
+    {
+        $id = Auth::user()->id;
+        $posts = Post::where('user_id',$id)->get();
+        return $this->sendResponse(ResourcePost::collection($posts),"Posts retrieved successfully");
+    }
+
     
 
     /**
@@ -39,7 +46,7 @@ class PostController extends BaseController
             return $this->sendError("please validate error",$validate->errors());
         }
 
-        //$input['user_id']= Auth::user()->id;
+        $input['user_id']= Auth::user()->id;
         try{
             $post = Post::create($input);
         } catch (Exception $e) {
@@ -61,7 +68,7 @@ class PostController extends BaseController
     public function show($id)
     {
         $post = Post::find($id);
-        if($post->fails()){
+        if(is_null($post)){
             return $this->sendError("Post Not Found");
         }
         return $this->sendResponse(new ResourcePost($post),"Post retrieved successfully");
@@ -86,6 +93,10 @@ class PostController extends BaseController
             return $this->sendError("please validate error",$validate->errors());
         }
 
+        if($post->user_id != Auth::id()){
+            return $this->sendError("You don't have rights");
+        }
+
         $post->title = $input['title'];
         $post->description = $input['description'];
         $post->save();
@@ -97,6 +108,10 @@ class PostController extends BaseController
      */
     public function destroy(Post $post)
     {
+        if($post->user_id != Auth::id()){
+            return $this->sendError("You don't have rights");
+        }
+        
         $post->delete();
         return $this->sendResponse(new ResourcePost($post),"Post deleted successfully");
     }

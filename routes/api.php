@@ -22,5 +22,7 @@ Route::post('register', 'AuthController@register');
 Route::post('login', 'AuthController@login');
 
 Route::middleware('auth:api')->group( function () {
+    Route::get('posts/user', 'PostController@userPosts');
     Route::resource('posts','PostController');
+    
 });
